@@ -1,48 +1,50 @@
 import { app } from "../firebase";
-import { getAuth, getRedirectResult, GoogleAuthProvider } from "firebase/auth";
-import { signInWithRedirect } from "firebase/auth";
-import { useEffect } from "react";
+import {
+  getAuth,
+  signInWithPopup,
+  setPersistence,
+  browserLocalPersistence,
+  GoogleAuthProvider,
+  signOut,
+} from "firebase/auth";
 
 const provider = new GoogleAuthProvider();
 const auth = getAuth(app);
 
+function handleOut() {
+  signOut(auth);
+}
 function GoogleAuthFb() {
   async function handleSign() {
-    await signInWithRedirect(auth, provider);
-    console.log("hi");
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        // Existing and future Auth states are now persisted in the current
+        // session only. Closing the window would clear any existing state even
+        // if a user forgets to sign out.
+        // ...
+        // New sign-in will be persisted with session persistence.
+        return signInWithPopup(auth, provider)
+          .then((result) => {
+            // This gives you a Google Access Token. You can use it to access the Google API.
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential.accessToken;
+            // The signed-in user info.
+            const user = result.user;
+            // IdP data available using getAdditionalUserInfo(result)
+            // ...
+            console.log(user);
+          })
+          .catch((error) => {});
+      })
+      .catch((error) => {});
   }
 
-  useEffect(() => {
-    console.log("hi");
-
-    async function run() {
-      await getRedirectResult(auth)
-        .then((result) => {
-          // This gives you a Google Access Token. You can use it to access Google APIs.
-          const credential = GoogleAuthProvider.credentialFromResult(result);
-          console.log(credential);
-          // const token = credential.accessToken;
-
-          // The signed-in user info.
-          const user = result.user;
-          console.log("User:", user);
-          // IdP data available using getAdditionalUserInfo(result)
-          // ...
-        })
-        .catch((error) => {
-          // // Handle Errors here.
-          // const errorCode = error.code;
-          // const errorMessage = error.message;
-          // // The email of the user's account used.
-          // const email = error.customData.email;
-          // // The AuthCredential type that was used.
-          // const credential = GoogleAuthProvider.credentialFromError(error);
-          // // ...
-        });
-    }
-    run();
-  }, []);
-  return <button onClick={handleSign}>GoogleAuthFb</button>;
+  return (
+    <div>
+      <button onClick={handleSign}>GoogleAuthFb</button>
+      <button onClick={handleOut}>Signout</button>
+    </div>
+  );
 }
 
 export default GoogleAuthFb;
