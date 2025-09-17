@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { app } from "../firebase";
 import {
   getAuth,
@@ -8,41 +9,82 @@ import {
   signOut,
 } from "firebase/auth";
 
-const provider = new GoogleAuthProvider();
-const auth = getAuth(app);
+function GoogleAuthFb({ setProv }) {
+  const [user, setUser] = useState({
+    name: "",
+    email: "",
+    photo: "",
+  });
 
-function handleOut() {
-  signOut(auth);
-}
-function GoogleAuthFb() {
-  async function handleSign() {
-    setPersistence(auth, browserLocalPersistence)
-      .then(() => {
-        // Existing and future Auth states are now persisted in the current
-        // session only. Closing the window would clear any existing state even
-        // if a user forgets to sign out.
-        // ...
-        // New sign-in will be persisted with session persistence.
-        return signInWithPopup(auth, provider)
-          .then((result) => {
-            // This gives you a Google Access Token. You can use it to access the Google API.
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            const token = credential.accessToken;
-            // The signed-in user info.
-            const user = result.user;
-            // IdP data available using getAdditionalUserInfo(result)
-            // ...
-            console.log(user);
-          })
-          .catch((error) => {});
-      })
-      .catch((error) => {});
+  // const {currentUser} = useAuthContext();
+
+  const provider = new GoogleAuthProvider();
+  const auth = getAuth(app);
+
+  // console.log(currentUser);
+
+  function handleOut() {
+    signOut(auth);
+    localStorage.clear();
+    setUser({
+    name: "",
+    email: "",
+    photo: "",
+  })
+  setProv("")
   }
+  async function handleSign() {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const token = credential.accessToken;
+        const user = result.user;
+        console.log(user);
+        setUser({
+          name: user.displayName,
+          email: user.email,
+          photo: user.photoURL,
+        });
+        setProv("google");
+
+        let obj = {
+          name: user.displayName,
+          email: user.email,
+          photo: user.photoURL,
+        };
+     
+        localStorage.setItem("user", JSON.stringify(obj));
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
+  useEffect(() => {
+    let g = localStorage.getItem("user");
+    g = JSON.parse(g);
+    console.log(g);
+    if(g){
+      setUser(g)
+      setProv("google")
+    }
+  }, []);
 
   return (
     <div>
-      <button onClick={handleSign}>GoogleAuthFb</button>
-      <button onClick={handleOut}>Signout</button>
+      {!user.name ? (
+        <div>
+          <button onClick={handleSign}>GoogleAuthFb</button>
+          <button onClick={handleOut}>Signout</button>
+        </div>
+      ) : (
+        <div className="">
+          <h1>{user?.name}</h1>
+          <img src={user?.photo} alt="User" />
+          <p>{user?.email}</p>
+          <button onClick={handleOut}>Signout</button>
+        </div>
+      )}
     </div>
   );
 }

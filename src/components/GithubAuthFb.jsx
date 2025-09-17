@@ -1,8 +1,9 @@
 import { getAuth, signInWithPopup, GithubAuthProvider } from "firebase/auth";
+import { app } from "../firebase";
 
 function GithubAuthFb() {
   const provider = new GithubAuthProvider();
-  const auth = getAuth();
+  const auth = getAuth(app);
 
   async function handleSign() {
     await signInWithPopup(auth, provider)
